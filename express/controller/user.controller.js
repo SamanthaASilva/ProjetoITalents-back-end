@@ -1,63 +1,76 @@
-let users = [
-    {
-        id: 1,
-        name: "Samantha",
-        age: 21
-    },
-]
-const createNewuser = (req, res) => {
+const userService = require('../service/user.service');
+const authService = require('../service/auth.service');
+
+const secret = 'ejb9B184jGLjH87qnwW005Wyhcf158'
+
+const createNewuser = async (req, res) => {
+    try{
     const newUser = req.body;
-    let found = false;
-    users.forEach(element => {
-        if(element.id == newUser.id){
-            found = true;
-            return res.status(400).send({message: "O id informado já existe, escolha outro!"});
-        }
-    });
   
-    if(Object.keys(newUser).length === 0 && !found){
+    if(Object.keys(newUser).length === 0){
         return res.status(400).send({message: "O corpo da mensagem está vazio"});
     }
 
-    if(!newUser.id && !found){
-        return res.status(400).send({message: "O corpo 'id' da mensagem está vazio"});
-    }
-
-    if(!newUser.name && !found){
+    if(!newUser.nome){
         return res.status(400).send({message: "O corpo 'nome' da mensagem está vazio"});
     }
 
-    if(!newUser.age && !found){
-        return res.status(400).send({message: "O corpo 'idade' da mensagem está vazio"});
+    if(!newUser.dataNascimento){
+        newUser.dataNascimento = "";
     }
 
-    if(!found){
-    newUser.date = new Date();
-    users.push(newUser);
-    res.send(users);
+    if(!newUser.cidade){
+        newUser.cidade = "";
+    }
+
+    if(!newUser.genero){
+        newUser.genero = "";
+    }
+
+    if(!newUser.profissao){
+        newUser.profissao = "";
+    }
+
+    const token = authService.generateToken({newUser}, secret);
+
+    res.status(201).send(await userService.createUser(newUser));
+
+    }catch{
+        console.log(`erro: ${err}`);
     }
 } 
 
-const getUser = (req,res) => {
-    const id = req.params.id;
-    const user = req.body;
-    let found = false;
-    users.map(function(value){
-        if(value.id == id){
+const getUser = async (req,res) => {
+    try{
+        const id = req.params.id;
+        let found = false;
+        
+        const user = await userService.findByIdUser(id)
+  
+        if(user != null){
             found = true;
-            return res.send(value);
         }
-    });
 
-    if(!found){
-        res.status(404).send({message: 'Nenhum usuário foi encontrado. Tente outro id de usuário'});
+        if(!found){
+            return res.status(404).send({message: 'Nenhum usuário foi encontrado. Tente outro id!'});
+        }
+  
+        res.status(200).send(user);
+    }catch(err){
+        console.log(`erro: ${err}`);
     }
+
 } 
 
-const updateuser = (req,res) => {
+const updateUser = async (req,res) => {
+    try{
     const id = req.params.id;
     const user = req.body;
     let found = false;
+
+    if(user != null){
+        found = true;
+    }
   
     if(Object.keys(user).length === 0 && !found){
         return res.status(400).send({message: "O corpo da mensagem está vazio"});
@@ -75,39 +88,35 @@ const updateuser = (req,res) => {
         return res.status(400).send({message: "O corpo 'idade' da mensagem está vazio"});
     }
 
-    users.map(function(value, index){
-        if(value.id == id){
-            found = true;
-            users[index] = user;
-            return res.send(users[index]);
-        }
-    });
-
-    if(!found){
-        res.status(404).send({message: 'Nenhum usuário foi encontrado. Tente outro id de usuário'});
+    res.status(201).send(await userService.updateUser(id, user));
+    }catch(err){
+        console.log(`erro: ${err}`);
     }
 } 
 
-const deleteUser =(req,res) => {
+const deleteUser = async (req,res) => {
+    try{
     const id = req.params.id;
     const user = req.body;
     let found = false;
-    users.map(function(value, index){
-        if(value.id == id){
-            found = true;
-            users.splice(index, 1);
-            return res.send(value);
-        }
-    });
+
+    if(user != null){
+        found = true;
+    }
 
     if(!found){
-        res.status(404).send({message: 'Nenhum usuário foi encontrado. Tente outro id de usuário'});
+        return res.status(404).send({message: 'Nenhum usuário foi encontrado. Tente outro id!'});
+    }
+
+    res.status(200).send(await userService.deleteUser(id));
+    }catch(err){
+        console.log(`erro: ${err}`);
     }
 }
 
 module.exports = {
     createNewuser,
     getUser,
-    updateuser,
+    updateUser,
     deleteUser
 }
